@@ -26,7 +26,7 @@ st.set_page_config(
     layout="wide",
 )
 
-st.title("🔐 IntentLock")
+st.title("IntentLock")
 st.caption(
     "Semantic authorization gateway for AI-initiated purchases"
 )
