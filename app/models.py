@@ -2,7 +2,55 @@ from datetime import date
 from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+
+def normalize_currency(value: str | None) -> str | None:
+    """
+    Convert common currency names and symbols into ISO currency codes.
+
+    Examples:
+    ₹, rupee, rupees, rs. -> INR
+    $, dollars -> USD
+    €, euros -> EUR
+    """
+
+    if value is None:
+        return None
+
+    cleaned = value.strip().upper().replace(".", "")
+
+    currency_aliases = {
+        "₹": "INR",
+        "RS": "INR",
+        "INR": "INR",
+        "RUPEE": "INR",
+        "RUPEES": "INR",
+        "INDIAN RUPEE": "INR",
+        "INDIAN RUPEES": "INR",
+
+        "$": "USD",
+        "US$": "USD",
+        "USD": "USD",
+        "DOLLAR": "USD",
+        "DOLLARS": "USD",
+        "US DOLLAR": "USD",
+        "US DOLLARS": "USD",
+
+        "€": "EUR",
+        "EUR": "EUR",
+        "EURO": "EUR",
+        "EUROS": "EUR",
+
+        "£": "GBP",
+        "GBP": "GBP",
+        "POUND": "GBP",
+        "POUNDS": "GBP",
+        "BRITISH POUND": "GBP",
+        "BRITISH POUNDS": "GBP",
+    }
+
+    return currency_aliases.get(cleaned, cleaned)
 
 
 class Decision(str, Enum):
@@ -36,6 +84,16 @@ class IntentContract(BaseModel):
     refundable_required: bool = False
     delivery_deadline: Optional[date] = None
 
+    @field_validator("currency", mode="before")
+    @classmethod
+    def normalize_currency_field(cls, value: str) -> str:
+        normalized = normalize_currency(value)
+
+        if not normalized:
+            return "INR"
+
+        return normalized
+
 
 class IntentDraft(BaseModel):
     """Unapproved purchasing constraints extracted by AI."""
@@ -49,6 +107,14 @@ class IntentDraft(BaseModel):
     refundable_required: Optional[bool] = None
     delivery_deadline: Optional[date] = None
     ambiguities: list[str] = Field(default_factory=list)
+
+    @field_validator("currency", mode="before")
+    @classmethod
+    def normalize_currency_field(
+        cls,
+        value: Optional[str],
+    ) -> Optional[str]:
+        return normalize_currency(value)
 
 
 class IntentExtractionResult(BaseModel):
@@ -70,6 +136,16 @@ class TransactionProposal(BaseModel):
     subscription_enabled: Optional[bool] = None
     refundable: Optional[bool] = None
     delivery_date: Optional[date] = None
+
+    @field_validator("currency", mode="before")
+    @classmethod
+    def normalize_currency_field(cls, value: str) -> str:
+        normalized = normalize_currency(value)
+
+        if not normalized:
+            return "INR"
+
+        return normalized
 
 
 class VerificationResult(BaseModel):
