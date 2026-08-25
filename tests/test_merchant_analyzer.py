@@ -17,7 +17,7 @@ def test_detects_hidden_subscription():
 
     assert result.transaction is not None
     assert result.transaction.amount == 999
-    assert result.transaction.subscription is True
+    assert result.transaction.subscription_enabled is True
 
 
 def test_detects_non_refundable_purchase():
@@ -50,7 +50,7 @@ def test_prompt_injection_cannot_hide_subscription():
     )
 
     assert result.transaction is not None
-    assert result.transaction.subscription is True
+    assert result.transaction.subscription_enabled is True
     assert len(result.suspicious_instructions) > 0
 
 
