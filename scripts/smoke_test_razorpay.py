@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+
+load_dotenv()
 from app.authorization import (
     create_payment_authorization,
 )
