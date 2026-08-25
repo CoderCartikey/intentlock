@@ -3,6 +3,10 @@ from datetime import date, timedelta
 from pathlib import Path
 
 import streamlit as st
+from dotenv import load_dotenv
+
+
+load_dotenv()
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -12,6 +16,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 
 from app.ai_provider import extract_intent_safely  # noqa: E402
+from app.authorization import create_payment_authorization  # noqa: E402
 from app.audit import get_recent_records, record_verification  # noqa: E402
 from app.merchant_analyzer import analyze_merchant_text_safely  # noqa: E402
 from app.models import (  # noqa: E402
@@ -22,6 +27,11 @@ from app.models import (  # noqa: E402
     VerificationResult,
 )
 from app.policy import verify_purchase  # noqa: E402
+from app.payment_executor import (  # noqa: E402
+    PaymentExecutionResult,
+    PaymentExecutionStatus,
+    execute_payment_authorization,
+)
 
 
 st.set_page_config(
@@ -132,6 +142,10 @@ def initialize_state() -> None:
         "approved_intent": None,
         "extraction_result": None,
         "latest_verification": None,
+        "payment_authorization_token": None,
+        "payment_authorization_error": None,
+        "payment_execution_result": None,
+        "tamper_attack_result": None,
         "merchant_text": (
             "LearnFast Premium Study Plan costs ₹999 today.\n\n"
             "The plan automatically renews every month for ₹999. "
@@ -300,7 +314,8 @@ with st.sidebar:
 
         **Step 4 — Get decision**
 
-        IntentLock allows, blocks, or pauses the purchase.
+        IntentLock allows, blocks, or pauses the purchase. Only an
+        allowed purchase receives a one-time Razorpay authorization.
 
         **Step 5 — View history**
 
@@ -770,6 +785,11 @@ with st.form("transaction_form"):
 
 
 if verify_transaction:
+    st.session_state.payment_authorization_token = None
+    st.session_state.payment_authorization_error = None
+    st.session_state.payment_execution_result = None
+    st.session_state.tamper_attack_result = None
+
     if st.session_state.approved_intent is None:
         st.error(
             "First confirm your buying rules in Step 2."
@@ -816,6 +836,21 @@ if verify_transaction:
             "transaction": transaction.model_dump(mode="json"),
             "result": result.model_dump(mode="json"),
         }
+
+        if result.decision == Decision.ALLOW:
+            try:
+                st.session_state.payment_authorization_token = (
+                    create_payment_authorization(
+                        transaction=transaction,
+                        verification_result=result,
+                        receipt_id=receipt_id,
+                    )
+                )
+
+            except RuntimeError as error:
+                st.session_state.payment_authorization_error = str(
+                    error
+                )
 
 
 # -------------------------------------------------------------------
@@ -879,6 +914,131 @@ if latest is not None:
 
         for question in result.clarification_questions:
             st.write(f"- {question}")
+
+    st.subheader("Payment enforcement")
+
+    protected_transaction = TransactionProposal.model_validate(
+        latest["transaction"]
+    )
+
+    if result.decision != Decision.ALLOW:
+        st.info(
+            "No signed payment authorization was issued. "
+            "The Razorpay order endpoint cannot be reached for this purchase."
+        )
+
+    elif st.session_state.payment_authorization_error:
+        st.error(
+            "The purchase passed policy checks, but payment authorization "
+            "failed safely. No Razorpay order was created."
+        )
+        st.caption(st.session_state.payment_authorization_error)
+
+    elif st.session_state.payment_authorization_token:
+        st.success(
+            "A short-lived authorization was created for this exact "
+            "merchant, product, amount and currency. The token is hidden."
+        )
+
+        attack_column, payment_column = st.columns(2)
+
+        with attack_column:
+            simulate_tampering = st.button(
+                "Simulate amount tampering",
+                use_container_width=True,
+                help=(
+                    "Changes the amount after approval and proves that "
+                    "IntentLock rejects the modified transaction."
+                ),
+            )
+
+        with payment_column:
+            create_razorpay_order = st.button(
+                "Create protected Razorpay test order",
+                use_container_width=True,
+                help=(
+                    "Consumes the signed authorization and calls Razorpay "
+                    "Test Mode. No real money is used."
+                ),
+            )
+
+        if simulate_tampering:
+            changed_transaction = protected_transaction.model_copy(
+                update={
+                    "amount": protected_transaction.amount + 1000,
+                }
+            )
+
+            attack_result = execute_payment_authorization(
+                token=(
+                    st.session_state.payment_authorization_token
+                ),
+                transaction=changed_transaction,
+                provider="mock",
+            )
+
+            st.session_state.tamper_attack_result = (
+                attack_result.model_dump(mode="json")
+            )
+
+        if create_razorpay_order:
+            execution_result = execute_payment_authorization(
+                token=(
+                    st.session_state.payment_authorization_token
+                ),
+                transaction=protected_transaction,
+                provider="razorpay",
+            )
+
+            st.session_state.payment_execution_result = (
+                execution_result.model_dump(mode="json")
+            )
+
+        if st.session_state.tamper_attack_result:
+            attack_result = PaymentExecutionResult.model_validate(
+                st.session_state.tamper_attack_result
+            )
+
+            if attack_result.authorization_error == "TRANSACTION_MISMATCH":
+                st.success(
+                    "TAMPERING BLOCKED: The approved amount was changed by "
+                    "₹1,000. The authorization no longer matched, so the "
+                    "payment provider was not called."
+                )
+            else:
+                st.warning(
+                    "Tampering simulation was denied, but returned: "
+                    f"{attack_result.error_code}"
+                )
+
+        if st.session_state.payment_execution_result:
+            execution_result = PaymentExecutionResult.model_validate(
+                st.session_state.payment_execution_result
+            )
+
+            if (
+                execution_result.status
+                == PaymentExecutionStatus.ORDER_CREATED
+            ):
+                st.success(
+                    "RAZORPAY TEST ORDER CREATED: "
+                    f"{execution_result.order_id}"
+                )
+                st.caption(
+                    "This authorization is now consumed. Clicking the "
+                    "button again will demonstrate replay protection."
+                )
+
+            elif execution_result.error_code is not None:
+                st.error(
+                    "PAYMENT DENIED: "
+                    f"{execution_result.error_code.value}"
+                )
+
+            else:
+                st.error(
+                    "Payment execution failed safely. No order was created."
+                )
 
     with st.expander("Technical view: complete decision record"):
         st.json(latest)
