@@ -1093,3 +1093,4 @@ else:
     st.caption(
         "No purchases have been checked yet."
     )
+    
