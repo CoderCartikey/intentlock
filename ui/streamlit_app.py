@@ -30,7 +30,6 @@ st.set_page_config(
 )
 
 
-# Compact, utility-style interface.
 st.markdown(
     """
     <style>
@@ -89,6 +88,14 @@ st.markdown(
         .status-ask {
             border-left-color: #768EA7;
             color: #203553;
+        }
+
+        .explanation-box {
+            background: #FFFFFF;
+            border: 1px solid #768EA7;
+            border-left: 5px solid #2950DA;
+            padding: 14px;
+            margin-bottom: 20px;
         }
 
         code {
@@ -196,33 +203,128 @@ def apply_draft_to_form() -> None:
             draft.delivery_deadline
         )
 
-    # Every new draft invalidates the previously approved contract.
     st.session_state.approved_intent = None
 
 
 initialize_state()
 
 
+# -------------------------------------------------------------------
+# Sidebar help
+# -------------------------------------------------------------------
+
+with st.sidebar:
+    st.header("How to use IntentLock")
+
+    st.markdown(
+        """
+        **Step 1 — Describe**
+
+        Write what you want the shopping AI to buy and mention
+        important restrictions.
+
+        **Step 2 — Confirm**
+
+        IntentLock converts your sentence into clear buying rules.
+        Check every rule and confirm it.
+
+        **Step 3 — Check purchase**
+
+        Enter the product that the shopping AI or merchant wants
+        to purchase.
+
+        **Step 4 — Get decision**
+
+        IntentLock allows, blocks, or pauses the purchase.
+
+        **Step 5 — View history**
+
+        Every decision receives a reference number and is stored.
+        """
+    )
+
+    st.divider()
+
+    st.subheader("Decision meanings")
+
+    st.markdown(
+        """
+        **ALLOW**
+
+        The purchase follows all confirmed rules.
+
+        **BLOCK**
+
+        The purchase definitely breaks at least one rule.
+
+        **ASK USER**
+
+        Information is missing. No payment should happen until the
+        user clarifies it.
+        """
+    )
+
+    st.divider()
+
+    st.subheader("Who controls payment?")
+
+    st.caption(
+        "AI only reads and organises the text. "
+        "Code checks the rules. The human confirms them. "
+        "AI cannot approve a payment."
+    )
+
+    if st.session_state.approved_intent is None:
+        st.warning("Buying rules are not confirmed.")
+    else:
+        st.success("Buying rules are confirmed.")
+
+
+# -------------------------------------------------------------------
+# Introduction
+# -------------------------------------------------------------------
+
 st.title("IntentLock")
+
 st.caption(
-    "Human-authorized transaction control for AI commerce"
+    "Checks whether an AI-planned purchase follows your instructions"
+)
+
+st.markdown(
+    """
+    <div class="explanation-box">
+        <strong>What is happening?</strong><br>
+        You describe what you want to buy. IntentLock turns your
+        request into clear rules. After you confirm those rules,
+        every proposed purchase is checked before payment.
+    </div>
+    """,
+    unsafe_allow_html=True,
 )
 
 
 # -------------------------------------------------------------------
-# Stage 1: AI extraction
+# Step 1
 # -------------------------------------------------------------------
 
-st.header("1. Describe the purchase")
+st.header("1. What do you want to buy?")
+
+st.caption(
+    "Write naturally. Include your budget and any important conditions."
+)
 
 st.text_area(
-    "Natural-language purchasing instruction",
+    "Your purchasing instructions",
     key="purchase_request",
     height=110,
+    help=(
+        "Example: Buy headphones below ₹3,000. "
+        "They must be refundable and must not include a subscription."
+    ),
 )
 
 if st.button(
-    "Extract Intent Draft",
+    "Understand my request",
     use_container_width=True,
 ):
     extraction_result = extract_intent_safely(
@@ -242,85 +344,100 @@ extraction = st.session_state.extraction_result
 if extraction is not None:
     if extraction.status == ExtractionStatus.SUCCESS:
         st.success(
-            f"Live AI extraction succeeded using "
-            f"{extraction.provider}: {extraction.model}"
+            "Your request was understood using the live AI service."
         )
 
     elif extraction.status == ExtractionStatus.FALLBACK:
         st.warning(
-            "AI was unavailable or mock mode was selected. "
-            "A conservative fallback draft was created. "
-            "Manual review is mandatory."
+            "The live AI was unavailable or backup mode was used. "
+            "IntentLock filled what it could. Check every field."
         )
 
         if extraction.error_code:
             st.caption(
-                f"Fallback reason: {extraction.error_code}"
+                f"Technical reason: {extraction.error_code}"
             )
 
     else:
         st.error(
-            "Intent extraction failed. No contract was created."
+            "Your request could not be understood. "
+            "No buying rules were created."
         )
 
     if extraction.draft is not None:
         if extraction.draft.ambiguities:
-            st.write("**Detected ambiguities:**")
+            st.write("**Information needing attention:**")
 
             for ambiguity in extraction.draft.ambiguities:
                 st.write(f"- {ambiguity}")
 
-        with st.expander("View unapproved Intent Draft"):
+        with st.expander(
+            "Technical view: what the AI extracted"
+        ):
             st.json(
                 extraction.draft.model_dump(mode="json")
             )
 
 
 # -------------------------------------------------------------------
-# Stage 2: Human review and approval
+# Step 2
 # -------------------------------------------------------------------
 
-st.header("2. Review and approve the Intent Contract")
+st.header("2. Check and confirm your buying rules")
+
+st.caption(
+    "The AI cannot approve these rules. Review them and confirm them yourself."
+)
 
 with st.form("intent_approval_form"):
     left, right = st.columns(2)
 
     with left:
         st.text_input(
-            "Product type",
+            "What type of product?",
             key="intent_product_type",
+            help="For example: headphones, laptop, ticket or software.",
         )
 
         st.number_input(
-            "Maximum amount",
+            "Maximum amount you allow",
             min_value=0.0,
             step=100.0,
             key="intent_maximum_amount",
+            help="The purchase will be blocked if it exceeds this amount.",
         )
 
         st.text_input(
             "Currency",
             key="intent_currency",
+            help="For example: INR, USD or EUR.",
         )
 
         st.text_input(
-            "Required features, comma-separated",
+            "Features the product must have",
             key="intent_required_features",
+            help=(
+                "Separate multiple features with commas. "
+                "Example: ANC, wireless, 1-year warranty."
+            ),
         )
 
     with right:
         st.selectbox(
-            "Subscription policy",
+            "Can it start a subscription?",
             options=[
                 "Unspecified",
                 "Prohibited",
                 "Allowed",
             ],
             key="intent_subscription_policy",
+            help=(
+                "Choose Prohibited if you only want a one-time purchase."
+            ),
         )
 
         st.selectbox(
-            "Refund policy",
+            "Must it be refundable?",
             options=[
                 "Unspecified",
                 "Required",
@@ -330,18 +447,18 @@ with st.form("intent_approval_form"):
         )
 
         st.checkbox(
-            "Use a delivery deadline",
+            "It must arrive before a specific date",
             key="intent_delivery_enabled",
         )
 
         if st.session_state.intent_delivery_enabled:
             st.date_input(
-                "Delivery deadline",
+                "Latest acceptable delivery date",
                 key="intent_delivery_deadline",
             )
 
     approve_contract = st.form_submit_button(
-        "Approve Intent Contract",
+        "Confirm these buying rules",
         use_container_width=True,
     )
 
@@ -351,17 +468,17 @@ if approve_contract:
 
     if not st.session_state.intent_product_type.strip():
         approval_errors.append(
-            "Product type is required."
+            "Tell us what type of product you want."
         )
 
     if st.session_state.intent_maximum_amount <= 0:
         approval_errors.append(
-            "Maximum amount must be greater than zero."
+            "Enter a maximum amount greater than zero."
         )
 
     if not st.session_state.intent_currency.strip():
         approval_errors.append(
-            "Currency is required."
+            "Enter the purchase currency."
         )
 
     if (
@@ -369,7 +486,7 @@ if approve_contract:
         == "Unspecified"
     ):
         approval_errors.append(
-            "Choose an explicit subscription policy."
+            "Choose whether subscriptions are allowed."
         )
 
     if (
@@ -377,7 +494,7 @@ if approve_contract:
         == "Unspecified"
     ):
         approval_errors.append(
-            "Choose an explicit refund policy."
+            "Choose whether refundability is required."
         )
 
     if approval_errors:
@@ -418,62 +535,66 @@ if approve_contract:
         )
 
         st.success(
-            "Intent Contract approved by the human."
+            "Buying rules confirmed. Purchases can now be checked."
         )
 
 
 if st.session_state.approved_intent is not None:
-    with st.expander("View approved Intent Contract"):
+    with st.expander("Show my confirmed buying rules"):
         st.json(st.session_state.approved_intent)
 else:
     st.info(
-        "No approved Intent Contract exists yet. "
-        "AI drafts cannot authorize transactions."
+        "Confirm your buying rules before checking a purchase."
     )
 
 
 # -------------------------------------------------------------------
-# Stage 3: Proposed transaction
+# Step 3
 # -------------------------------------------------------------------
 
-st.header("3. Enter the proposed transaction")
+st.header("3. What purchase is being attempted?")
+
+st.caption(
+    "These details represent what the shopping AI or merchant wants to charge."
+)
 
 with st.form("transaction_form"):
     transaction_left, transaction_right = st.columns(2)
 
     with transaction_left:
         merchant = st.text_input(
-            "Merchant",
+            "Seller or merchant",
             value="Demo Electronics",
         )
 
         product_name = st.text_input(
-            "Product name",
+            "Exact product name",
             value="SoundMax Pro",
         )
 
         transaction_amount = st.number_input(
-            "Transaction amount",
+            "Amount being charged",
             min_value=1.0,
             value=2999.0,
             step=100.0,
         )
 
         transaction_currency = st.text_input(
-            "Transaction currency",
+            "Charge currency",
             value="INR",
         )
 
     with transaction_right:
         transaction_features_text = st.text_input(
-            "Product features, comma-separated",
+            "Features included with this product",
             value=(
                 "active noise cancellation, wireless"
             ),
+            help="Separate multiple features using commas.",
         )
 
         subscription_status = st.selectbox(
-            "Does this transaction create a subscription?",
+            "Will this charge start a subscription?",
             options=[
                 "No",
                 "Yes",
@@ -482,7 +603,7 @@ with st.form("transaction_form"):
         )
 
         refundable_status = st.selectbox(
-            "Is the purchase refundable?",
+            "Is this purchase refundable?",
             options=[
                 "Yes",
                 "No",
@@ -491,7 +612,7 @@ with st.form("transaction_form"):
         )
 
         delivery_known = st.checkbox(
-            "Delivery date is known",
+            "The delivery date is known",
             value=False,
         )
 
@@ -499,12 +620,12 @@ with st.form("transaction_form"):
 
         if delivery_known:
             transaction_delivery_date = st.date_input(
-                "Proposed delivery date",
+                "Expected delivery date",
                 value=date.today() + timedelta(days=2),
             )
 
     verify_transaction = st.form_submit_button(
-        "Verify Proposed Transaction",
+        "Check this purchase",
         use_container_width=True,
     )
 
@@ -512,8 +633,7 @@ with st.form("transaction_form"):
 if verify_transaction:
     if st.session_state.approved_intent is None:
         st.error(
-            "Transaction cannot be verified because no "
-            "human-approved Intent Contract exists."
+            "First confirm your buying rules in Step 2."
         )
 
     else:
@@ -558,7 +678,7 @@ if verify_transaction:
 
 
 # -------------------------------------------------------------------
-# Stage 4: Decision and receipt
+# Step 4
 # -------------------------------------------------------------------
 
 latest = st.session_state.latest_verification
@@ -568,15 +688,14 @@ if latest is not None:
         latest["result"]
     )
 
-    st.header("4. Decision")
+    st.header("4. Is this purchase safe to continue?")
 
     if result.decision == Decision.ALLOW:
         st.markdown(
             """
             <div class="status-box status-allow">
-                <strong>ALLOW</strong><br>
-                The proposed transaction satisfies the
-                human-approved Intent Contract.
+                <strong>ALLOW PURCHASE</strong><br>
+                This purchase follows all the rules you confirmed.
             </div>
             """,
             unsafe_allow_html=True,
@@ -586,9 +705,8 @@ if latest is not None:
         st.markdown(
             """
             <div class="status-box status-block">
-                <strong>BLOCK</strong><br>
-                The proposed transaction violates one or more
-                approved constraints.
+                <strong>BLOCK PURCHASE</strong><br>
+                This purchase breaks at least one confirmed rule.
             </div>
             """,
             unsafe_allow_html=True,
@@ -598,39 +716,42 @@ if latest is not None:
         st.markdown(
             """
             <div class="status-box status-ask">
-                <strong>ASK USER</strong><br>
-                Information is missing or ambiguous.
-                No payment should be created.
+                <strong>PAUSE AND ASK THE USER</strong><br>
+                Important information is missing. Do not pay yet.
             </div>
             """,
             unsafe_allow_html=True,
         )
 
     st.write(
-        f"**Audit receipt:** `{latest['receipt_id']}`"
+        f"**Decision reference number:** `{latest['receipt_id']}`"
     )
 
     if result.violations:
-        st.write("**Violations:**")
+        st.write("**Rules broken by this purchase:**")
 
         for violation in result.violations:
             st.write(f"- `{violation.value}`")
 
     if result.clarification_questions:
-        st.write("**Clarification required:**")
+        st.write("**Questions that must be answered:**")
 
         for question in result.clarification_questions:
             st.write(f"- {question}")
 
-    with st.expander("View complete decision receipt"):
+    with st.expander("Technical view: complete decision record"):
         st.json(latest)
 
 
 # -------------------------------------------------------------------
-# Stage 5: Audit history
+# Step 5
 # -------------------------------------------------------------------
 
-st.header("5. Audit history")
+st.header("5. Previous purchase checks")
+
+st.caption(
+    "Every check is stored so the decision can be reviewed later."
+)
 
 records = get_recent_records(limit=10)
 
@@ -640,13 +761,13 @@ if records:
     for record in records:
         audit_rows.append(
             {
-                "Receipt": record["receipt_id"],
+                "Reference": record["receipt_id"],
                 "Time (UTC)": (
                     record["created_at"][:19]
                     .replace("T", " ")
                 ),
                 "Decision": record["decision"],
-                "Merchant": (
+                "Seller": (
                     record["transaction"]["merchant"]
                 ),
                 "Product": (
@@ -669,5 +790,5 @@ if records:
 
 else:
     st.caption(
-        "No verification records have been created yet."
+        "No purchases have been checked yet."
     )
