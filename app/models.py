@@ -19,8 +19,14 @@ class ViolationCode(str, Enum):
     DELIVERY_DEADLINE_MISSED = "DELIVERY_DEADLINE_MISSED"
 
 
+class ExtractionStatus(str, Enum):
+    SUCCESS = "SUCCESS"
+    FALLBACK = "FALLBACK"
+    FAILED = "FAILED"
+
+
 class IntentContract(BaseModel):
-    """The user-approved rules an AI shopper must follow."""
+    """Rules explicitly reviewed and approved by the user."""
 
     product_type: str
     maximum_amount: float = Field(gt=0)
@@ -31,8 +37,30 @@ class IntentContract(BaseModel):
     delivery_deadline: Optional[date] = None
 
 
+class IntentDraft(BaseModel):
+    """Unapproved purchasing constraints extracted by AI."""
+
+    source_text: str
+    product_type: Optional[str] = None
+    maximum_amount: Optional[float] = Field(default=None, gt=0)
+    currency: Optional[str] = None
+    required_features: list[str] = Field(default_factory=list)
+    subscription_allowed: Optional[bool] = None
+    refundable_required: Optional[bool] = None
+    delivery_deadline: Optional[date] = None
+    ambiguities: list[str] = Field(default_factory=list)
+
+
+class IntentExtractionResult(BaseModel):
+    status: ExtractionStatus
+    provider: str
+    model: Optional[str] = None
+    draft: Optional[IntentDraft] = None
+    error_code: Optional[str] = None
+
+
 class TransactionProposal(BaseModel):
-    """Facts extracted from a merchant listing or checkout page."""
+    """Facts extracted from a merchant listing or checkout."""
 
     merchant: str
     product_name: str
