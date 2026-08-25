@@ -161,7 +161,7 @@ def _build_result_from_data(
         amount=amount,
         currency=(data.get("currency", "") or "INR").upper(),
         features=data.get("features", []),
-        subscription=_status_to_boolean(
+        subscription_enabled=_status_to_boolean(
             data.get("subscription_status", "UNKNOWN")
         ),
         refundable=_refund_to_boolean(
