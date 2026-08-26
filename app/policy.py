@@ -7,15 +7,22 @@ from app.models import (
 )
 
 
+def _append_violation_once(
+    violations: list[ViolationCode],
+    violation: ViolationCode,
+) -> None:
+    if violation not in violations:
+        violations.append(violation)
+
+
 def verify_purchase(
     intent: IntentContract,
     transaction: TransactionProposal,
 ) -> VerificationResult:
     """
-    Deterministically verifies a proposed purchase against
-    a user-approved Intent Contract.
+    Deterministically verify a purchase against a human-approved contract.
 
-    This function never calls an AI model and never creates a payment.
+    This function never calls AI and never creates a payment.
     """
 
     violations: list[ViolationCode] = []
@@ -28,22 +35,62 @@ def verify_purchase(
         )
 
     if transaction.amount > intent.maximum_amount:
-        violations.append(ViolationCode.AMOUNT_EXCEEDED)
+        _append_violation_once(
+            violations,
+            ViolationCode.AMOUNT_EXCEEDED,
+        )
 
-    if not intent.subscription_allowed:
-        if transaction.subscription_enabled is True:
-            violations.append(ViolationCode.SUBSCRIPTION_PROHIBITED)
-        elif transaction.subscription_enabled is None:
-            questions.append("Is this a one-time purchase or a recurring subscription?")
+    if transaction.subscription_enabled is True:
+        if not intent.subscription_allowed:
+            _append_violation_once(
+                violations,
+                ViolationCode.SUBSCRIPTION_PROHIBITED,
+            )
+        else:
+            if transaction.recurring_amount is None:
+                questions.append(
+                    "What amount will be charged on each renewal?"
+                )
+            elif (
+                transaction.recurring_amount
+                > intent.maximum_amount
+            ):
+                _append_violation_once(
+                    violations,
+                    ViolationCode.RECURRING_AMOUNT_EXCEEDED,
+                )
+
+            if not transaction.billing_frequency:
+                questions.append(
+                    "How often will the subscription renew?"
+                )
+
+    elif transaction.subscription_enabled is None:
+        if not intent.subscription_allowed:
+            questions.append(
+                "Is this a one-time purchase or a recurring subscription?"
+            )
+
+    elif transaction.recurring_amount is not None:
+        questions.append(
+            "The merchant supplied a recurring amount but marked the "
+            "purchase as non-subscription. Which term is correct?"
+        )
 
     if intent.refundable_required:
         if transaction.refundable is False:
-            violations.append(ViolationCode.REFUNDABILITY_REQUIRED)
+            _append_violation_once(
+                violations,
+                ViolationCode.REFUNDABILITY_REQUIRED,
+            )
         elif transaction.refundable is None:
-            questions.append("Is the refund or return policy known?")
+            questions.append(
+                "Is the refund or return policy known?"
+            )
 
     transaction_features = {
-        feature.strip().lower() for feature in transaction.features
+        feature.strip().lower()
+        for feature in transaction.features
     }
 
     missing_features = [
@@ -53,13 +100,21 @@ def verify_purchase(
     ]
 
     if missing_features:
-        violations.append(ViolationCode.REQUIRED_FEATURE_MISSING)
+        _append_violation_once(
+            violations,
+            ViolationCode.REQUIRED_FEATURE_MISSING,
+        )
 
     if intent.delivery_deadline is not None:
         if transaction.delivery_date is None:
-            questions.append("What is the confirmed delivery date?")
+            questions.append(
+                "What is the confirmed delivery date?"
+            )
         elif transaction.delivery_date > intent.delivery_deadline:
-            violations.append(ViolationCode.DELIVERY_DEADLINE_MISSED)
+            _append_violation_once(
+                violations,
+                ViolationCode.DELIVERY_DEADLINE_MISSED,
+            )
 
     if violations:
         return VerificationResult(
@@ -74,4 +129,6 @@ def verify_purchase(
             clarification_questions=questions,
         )
 
-    return VerificationResult(decision=Decision.ALLOW)
+    return VerificationResult(
+        decision=Decision.ALLOW
+    )
