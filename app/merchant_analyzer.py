@@ -214,6 +214,7 @@ def _deterministic_safety_facts(
     refundable_phrases = [
         "fully refundable",
         "refund available",
+        "refund is available",
         "refunds available",
         "eligible for refund",
         "money-back guarantee",
