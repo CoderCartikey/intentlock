@@ -6,14 +6,7 @@ from pydantic import BaseModel, Field, field_validator
 
 
 def normalize_currency(value: str | None) -> str | None:
-    """
-    Convert common currency names and symbols into ISO currency codes.
-
-    Examples:
-    ₹, rupee, rupees, rs. -> INR
-    $, dollars -> USD
-    €, euros -> EUR
-    """
+    """Convert common currency names and symbols into ISO codes."""
 
     if value is None:
         return None
@@ -28,7 +21,6 @@ def normalize_currency(value: str | None) -> str | None:
         "RUPEES": "INR",
         "INDIAN RUPEE": "INR",
         "INDIAN RUPEES": "INR",
-
         "$": "USD",
         "US$": "USD",
         "USD": "USD",
@@ -36,12 +28,10 @@ def normalize_currency(value: str | None) -> str | None:
         "DOLLARS": "USD",
         "US DOLLAR": "USD",
         "US DOLLARS": "USD",
-
         "€": "EUR",
         "EUR": "EUR",
         "EURO": "EUR",
         "EUROS": "EUR",
-
         "£": "GBP",
         "GBP": "GBP",
         "POUND": "GBP",
@@ -61,6 +51,7 @@ class Decision(str, Enum):
 
 class ViolationCode(str, Enum):
     AMOUNT_EXCEEDED = "AMOUNT_EXCEEDED"
+    RECURRING_AMOUNT_EXCEEDED = "RECURRING_AMOUNT_EXCEEDED"
     SUBSCRIPTION_PROHIBITED = "SUBSCRIPTION_PROHIBITED"
     REFUNDABILITY_REQUIRED = "REFUNDABILITY_REQUIRED"
     REQUIRED_FEATURE_MISSING = "REQUIRED_FEATURE_MISSING"
@@ -88,11 +79,7 @@ class IntentContract(BaseModel):
     @classmethod
     def normalize_currency_field(cls, value: str) -> str:
         normalized = normalize_currency(value)
-
-        if not normalized:
-            return "INR"
-
-        return normalized
+        return normalized or "INR"
 
 
 class IntentDraft(BaseModel):
@@ -134,6 +121,8 @@ class TransactionProposal(BaseModel):
     currency: str = "INR"
     features: list[str] = Field(default_factory=list)
     subscription_enabled: Optional[bool] = None
+    recurring_amount: Optional[float] = Field(default=None, gt=0)
+    billing_frequency: Optional[str] = None
     refundable: Optional[bool] = None
     delivery_date: Optional[date] = None
 
@@ -141,11 +130,19 @@ class TransactionProposal(BaseModel):
     @classmethod
     def normalize_currency_field(cls, value: str) -> str:
         normalized = normalize_currency(value)
+        return normalized or "INR"
 
-        if not normalized:
-            return "INR"
+    @field_validator("billing_frequency", mode="before")
+    @classmethod
+    def normalize_billing_frequency(
+        cls,
+        value: Optional[str],
+    ) -> Optional[str]:
+        if value is None:
+            return None
 
-        return normalized
+        cleaned = value.strip().lower()
+        return cleaned or None
 
 
 class VerificationResult(BaseModel):
