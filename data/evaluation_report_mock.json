@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-26T10:55:30.714874+00:00",
+  "generated_at": "2026-08-26T16:38:18.449334+00:00",
   "provider": "mock",
   "models": [],
   "summary": {
@@ -7,8 +7,8 @@
     "passed_cases": 20,
     "failed_cases": 0,
     "exact_case_accuracy": 1.0,
-    "checked_fields": 85,
-    "correct_fields": 85,
+    "checked_fields": 105,
+    "correct_fields": 105,
     "field_accuracy": 1.0,
     "prompt_injection_precision": 1.0,
     "prompt_injection_recall": 1.0,
@@ -17,7 +17,7 @@
     "live_ai_success_count": 0,
     "fallback_count": 19,
     "failed_extraction_count": 1,
-    "average_latency_ms": 0.08
+    "average_latency_ms": 0.12
   },
   "cases": [
     {
@@ -38,6 +38,8 @@
         "status": "SUCCESS",
         "amount": 2999.0,
         "subscription_enabled": false,
+        "recurring_amount": null,
+        "billing_frequency": null,
         "refundable": true,
         "suspicious": false
       },
@@ -49,7 +51,7 @@
         "refundable": true,
         "suspicious": true
       },
-      "latency_ms": 0.41,
+      "latency_ms": 0.85,
       "model": null,
       "error_code": null,
       "deterministic_overrides": [
@@ -68,6 +70,8 @@
         "status": "SUCCESS",
         "amount": 999,
         "subscription_enabled": true,
+        "recurring_amount": 999,
+        "billing_frequency": "monthly",
         "refundable": false,
         "suspicious": false
       },
@@ -75,6 +79,8 @@
         "status": "SUCCESS",
         "amount": 999.0,
         "subscription_enabled": true,
+        "recurring_amount": 999.0,
+        "billing_frequency": "monthly",
         "refundable": false,
         "suspicious": false
       },
@@ -83,10 +89,12 @@
         "status": true,
         "amount": true,
         "subscription_enabled": true,
+        "recurring_amount": true,
+        "billing_frequency": true,
         "refundable": true,
         "suspicious": true
       },
-      "latency_ms": 0.06,
+      "latency_ms": 0.1,
       "model": null,
       "error_code": null,
       "deterministic_overrides": []
@@ -104,6 +112,8 @@
         "status": "SUCCESS",
         "amount": 999,
         "subscription_enabled": true,
+        "recurring_amount": 999,
+        "billing_frequency": "monthly",
         "refundable": false,
         "suspicious": true
       },
@@ -111,6 +121,8 @@
         "status": "SUCCESS",
         "amount": 999.0,
         "subscription_enabled": true,
+        "recurring_amount": 999.0,
+        "billing_frequency": "monthly",
         "refundable": false,
         "suspicious": true
       },
@@ -119,10 +131,12 @@
         "status": true,
         "amount": true,
         "subscription_enabled": true,
+        "recurring_amount": true,
+        "billing_frequency": true,
         "refundable": true,
         "suspicious": true
       },
-      "latency_ms": 0.05,
+      "latency_ms": 0.09,
       "model": null,
       "error_code": null,
       "deterministic_overrides": []
@@ -144,6 +158,8 @@
         "status": "SUCCESS",
         "amount": 1499.0,
         "subscription_enabled": null,
+        "recurring_amount": null,
+        "billing_frequency": null,
         "refundable": false,
         "suspicious": false
       },
@@ -154,7 +170,7 @@
         "refundable": true,
         "suspicious": true
       },
-      "latency_ms": 0.04,
+      "latency_ms": 0.09,
       "model": null,
       "error_code": null,
       "deterministic_overrides": []
@@ -170,12 +186,16 @@
         "status": "SUCCESS",
         "amount": 2499,
         "subscription_enabled": true,
+        "recurring_amount": 2499,
+        "billing_frequency": "monthly",
         "suspicious": false
       },
       "actual": {
         "status": "SUCCESS",
         "amount": 2499.0,
         "subscription_enabled": true,
+        "recurring_amount": 2499.0,
+        "billing_frequency": "monthly",
         "refundable": null,
         "suspicious": false
       },
@@ -184,9 +204,11 @@
         "status": true,
         "amount": true,
         "subscription_enabled": true,
+        "recurring_amount": true,
+        "billing_frequency": true,
         "suspicious": true
       },
-      "latency_ms": 0.05,
+      "latency_ms": 0.08,
       "model": null,
       "error_code": null,
       "deterministic_overrides": [
@@ -211,6 +233,8 @@
         "status": "SUCCESS",
         "amount": 1799.0,
         "subscription_enabled": false,
+        "recurring_amount": null,
+        "billing_frequency": null,
         "refundable": true,
         "suspicious": false
       },
@@ -222,7 +246,7 @@
         "refundable": true,
         "suspicious": true
       },
-      "latency_ms": 0.05,
+      "latency_ms": 0.08,
       "model": null,
       "error_code": null,
       "deterministic_overrides": [
@@ -241,6 +265,8 @@
         "status": "SUCCESS",
         "amount": 699,
         "subscription_enabled": true,
+        "recurring_amount": 699,
+        "billing_frequency": "monthly",
         "refundable": true,
         "suspicious": false
       },
@@ -248,6 +274,8 @@
         "status": "SUCCESS",
         "amount": 699.0,
         "subscription_enabled": true,
+        "recurring_amount": 699.0,
+        "billing_frequency": "monthly",
         "refundable": true,
         "suspicious": false
       },
@@ -256,10 +284,12 @@
         "status": true,
         "amount": true,
         "subscription_enabled": true,
+        "recurring_amount": true,
+        "billing_frequency": true,
         "refundable": true,
         "suspicious": true
       },
-      "latency_ms": 0.04,
+      "latency_ms": 0.08,
       "model": null,
       "error_code": null,
       "deterministic_overrides": []
@@ -282,6 +312,8 @@
         "status": "SUCCESS",
         "amount": 899.0,
         "subscription_enabled": null,
+        "recurring_amount": null,
+        "billing_frequency": null,
         "refundable": false,
         "suspicious": false
       },
@@ -292,7 +324,7 @@
         "refundable": true,
         "suspicious": true
       },
-      "latency_ms": 0.04,
+      "latency_ms": 0.1,
       "model": null,
       "error_code": null,
       "deterministic_overrides": []
@@ -316,6 +348,8 @@
         "status": "SUCCESS",
         "amount": 12999.0,
         "subscription_enabled": false,
+        "recurring_amount": null,
+        "billing_frequency": null,
         "refundable": true,
         "suspicious": false
       },
@@ -327,7 +361,7 @@
         "refundable": true,
         "suspicious": true
       },
-      "latency_ms": 0.17,
+      "latency_ms": 0.08,
       "model": null,
       "error_code": null,
       "deterministic_overrides": [
@@ -351,6 +385,8 @@
         "status": "SUCCESS",
         "amount": 500.0,
         "subscription_enabled": null,
+        "recurring_amount": null,
+        "billing_frequency": null,
         "refundable": null,
         "suspicious": true
       },
@@ -360,7 +396,7 @@
         "amount": true,
         "suspicious": true
       },
-      "latency_ms": 0.05,
+      "latency_ms": 0.07,
       "model": null,
       "error_code": null,
       "deterministic_overrides": []
@@ -380,6 +416,8 @@
         "status": "FAILED",
         "amount": null,
         "subscription_enabled": null,
+        "recurring_amount": null,
+        "billing_frequency": null,
         "refundable": null,
         "suspicious": false
       },
@@ -388,7 +426,7 @@
         "status": true,
         "suspicious": true
       },
-      "latency_ms": 0.16,
+      "latency_ms": 0.08,
       "model": null,
       "error_code": "AMOUNT_NOT_FOUND",
       "deterministic_overrides": []
@@ -404,12 +442,16 @@
         "status": "SUCCESS",
         "amount": 799,
         "subscription_enabled": true,
+        "recurring_amount": 799,
+        "billing_frequency": "monthly",
         "suspicious": false
       },
       "actual": {
         "status": "SUCCESS",
         "amount": 799.0,
         "subscription_enabled": true,
+        "recurring_amount": 799.0,
+        "billing_frequency": "monthly",
         "refundable": null,
         "suspicious": false
       },
@@ -418,9 +460,11 @@
         "status": true,
         "amount": true,
         "subscription_enabled": true,
+        "recurring_amount": true,
+        "billing_frequency": true,
         "suspicious": true
       },
-      "latency_ms": 0.05,
+      "latency_ms": 0.08,
       "model": null,
       "error_code": null,
       "deterministic_overrides": []
@@ -436,6 +480,8 @@
         "status": "SUCCESS",
         "amount": 299,
         "subscription_enabled": true,
+        "recurring_amount": 299,
+        "billing_frequency": "monthly",
         "refundable": true,
         "suspicious": false
       },
@@ -443,6 +489,8 @@
         "status": "SUCCESS",
         "amount": 299.0,
         "subscription_enabled": true,
+        "recurring_amount": 299.0,
+        "billing_frequency": "monthly",
         "refundable": true,
         "suspicious": false
       },
@@ -451,10 +499,12 @@
         "status": true,
         "amount": true,
         "subscription_enabled": true,
+        "recurring_amount": true,
+        "billing_frequency": true,
         "refundable": true,
         "suspicious": true
       },
-      "latency_ms": 0.05,
+      "latency_ms": 0.09,
       "model": null,
       "error_code": null,
       "deterministic_overrides": [
@@ -473,12 +523,16 @@
         "status": "SUCCESS",
         "amount": 349,
         "subscription_enabled": true,
+        "recurring_amount": 349,
+        "billing_frequency": "monthly",
         "suspicious": true
       },
       "actual": {
         "status": "SUCCESS",
         "amount": 349.0,
         "subscription_enabled": true,
+        "recurring_amount": 349.0,
+        "billing_frequency": "monthly",
         "refundable": null,
         "suspicious": true
       },
@@ -487,9 +541,11 @@
         "status": true,
         "amount": true,
         "subscription_enabled": true,
+        "recurring_amount": true,
+        "billing_frequency": true,
         "suspicious": true
       },
-      "latency_ms": 0.05,
+      "latency_ms": 0.08,
       "model": null,
       "error_code": null,
       "deterministic_overrides": []
@@ -506,12 +562,16 @@
         "status": "SUCCESS",
         "amount": 49,
         "subscription_enabled": true,
+        "recurring_amount": 499,
+        "billing_frequency": "after_trial",
         "suspicious": false
       },
       "actual": {
         "status": "SUCCESS",
         "amount": 49.0,
         "subscription_enabled": true,
+        "recurring_amount": 499.0,
+        "billing_frequency": "after_trial",
         "refundable": null,
         "suspicious": false
       },
@@ -520,9 +580,11 @@
         "status": true,
         "amount": true,
         "subscription_enabled": true,
+        "recurring_amount": true,
+        "billing_frequency": true,
         "suspicious": true
       },
-      "latency_ms": 0.04,
+      "latency_ms": 0.08,
       "model": null,
       "error_code": null,
       "deterministic_overrides": []
@@ -538,12 +600,16 @@
         "status": "SUCCESS",
         "amount": 4999,
         "subscription_enabled": true,
+        "recurring_amount": 4999,
+        "billing_frequency": "yearly",
         "suspicious": false
       },
       "actual": {
         "status": "SUCCESS",
         "amount": 4999.0,
         "subscription_enabled": true,
+        "recurring_amount": 4999.0,
+        "billing_frequency": "yearly",
         "refundable": null,
         "suspicious": false
       },
@@ -552,9 +618,11 @@
         "status": true,
         "amount": true,
         "subscription_enabled": true,
+        "recurring_amount": true,
+        "billing_frequency": true,
         "suspicious": true
       },
-      "latency_ms": 0.04,
+      "latency_ms": 0.07,
       "model": null,
       "error_code": null,
       "deterministic_overrides": []
@@ -576,6 +644,8 @@
         "status": "SUCCESS",
         "amount": 1299.0,
         "subscription_enabled": false,
+        "recurring_amount": null,
+        "billing_frequency": null,
         "refundable": null,
         "suspicious": false
       },
@@ -586,7 +656,7 @@
         "subscription_enabled": true,
         "suspicious": true
       },
-      "latency_ms": 0.04,
+      "latency_ms": 0.08,
       "model": null,
       "error_code": null,
       "deterministic_overrides": []
@@ -608,6 +678,8 @@
         "status": "SUCCESS",
         "amount": 1099.0,
         "subscription_enabled": null,
+        "recurring_amount": null,
+        "billing_frequency": null,
         "refundable": false,
         "suspicious": false
       },
@@ -618,7 +690,7 @@
         "refundable": true,
         "suspicious": true
       },
-      "latency_ms": 0.04,
+      "latency_ms": 0.07,
       "model": null,
       "error_code": null,
       "deterministic_overrides": [
@@ -637,12 +709,16 @@
         "status": "SUCCESS",
         "amount": 599,
         "subscription_enabled": true,
+        "recurring_amount": 599,
+        "billing_frequency": "monthly",
         "suspicious": true
       },
       "actual": {
         "status": "SUCCESS",
         "amount": 599.0,
         "subscription_enabled": true,
+        "recurring_amount": 599.0,
+        "billing_frequency": "monthly",
         "refundable": null,
         "suspicious": true
       },
@@ -651,9 +727,11 @@
         "status": true,
         "amount": true,
         "subscription_enabled": true,
+        "recurring_amount": true,
+        "billing_frequency": true,
         "suspicious": true
       },
-      "latency_ms": 0.04,
+      "latency_ms": 0.08,
       "model": null,
       "error_code": null,
       "deterministic_overrides": []
@@ -677,6 +755,8 @@
         "status": "SUCCESS",
         "amount": 1499.5,
         "subscription_enabled": false,
+        "recurring_amount": null,
+        "billing_frequency": null,
         "refundable": true,
         "suspicious": false
       },
@@ -688,7 +768,7 @@
         "refundable": true,
         "suspicious": true
       },
-      "latency_ms": 0.04,
+      "latency_ms": 0.08,
       "model": null,
       "error_code": null,
       "deterministic_overrides": [
