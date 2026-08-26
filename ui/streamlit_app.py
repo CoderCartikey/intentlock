@@ -157,6 +157,8 @@ def initialize_state() -> None:
         "transaction_merchant": "Demo Electronics",
         "transaction_product_name": "SoundMax Pro",
         "transaction_amount": 2999.0,
+        "transaction_recurring_amount": 0.0,
+        "transaction_billing_frequency": "",
         "transaction_currency": "INR",
         "transaction_features": (
             "active noise cancellation, wireless"
@@ -263,6 +265,12 @@ def apply_merchant_analysis_to_form() -> None:
     st.session_state.transaction_merchant = transaction.merchant
     st.session_state.transaction_product_name = transaction.product_name
     st.session_state.transaction_amount = transaction.amount
+    st.session_state.transaction_recurring_amount = (
+        transaction.recurring_amount or 0.0
+    )
+    st.session_state.transaction_billing_frequency = (
+        transaction.billing_frequency or ""
+    )
     st.session_state.transaction_currency = transaction.currency
     st.session_state.transaction_features = ", ".join(
         transaction.features
@@ -727,10 +735,11 @@ with st.form("transaction_form"):
         )
 
         st.number_input(
-            "Amount being charged",
+            "Amount charged now",
             min_value=1.0,
             step=100.0,
             key="transaction_amount",
+            help="The amount taken immediately at checkout.",
         )
 
         st.text_input(
@@ -753,6 +762,24 @@ with st.form("transaction_form"):
                 "Unknown",
             ],
             key="transaction_subscription_status",
+        )
+
+        st.number_input(
+            "Future recurring charge (₹0 if none or unknown)",
+            min_value=0.0,
+            step=100.0,
+            key="transaction_recurring_amount",
+            help=(
+                "Example: for ₹49 today followed by ₹499/month, "
+                "enter 499 here."
+            ),
+        )
+
+        st.text_input(
+            "Billing frequency",
+            key="transaction_billing_frequency",
+            placeholder="monthly, yearly, after_trial, or leave blank",
+            help="How often the future recurring charge will occur.",
         )
 
         st.selectbox(
@@ -804,6 +831,15 @@ if verify_transaction:
             merchant=st.session_state.transaction_merchant,
             product_name=st.session_state.transaction_product_name,
             amount=st.session_state.transaction_amount,
+            recurring_amount=(
+                st.session_state.transaction_recurring_amount
+                if st.session_state.transaction_recurring_amount > 0
+                else None
+            ),
+            billing_frequency=(
+                st.session_state.transaction_billing_frequency.strip()
+                or None
+            ),
             currency=(
                 st.session_state.transaction_currency.strip().upper()
             ),
@@ -937,7 +973,8 @@ if latest is not None:
     elif st.session_state.payment_authorization_token:
         st.success(
             "A short-lived authorization was created for this exact "
-            "merchant, product, amount and currency. The token is hidden."
+            "merchant, product, immediate charge, recurring terms and "
+            "currency. The token is hidden."
         )
 
         attack_column, payment_column = st.columns(2)
@@ -1076,6 +1113,12 @@ if records:
                 ),
                 "Amount": (
                     record["transaction"]["amount"]
+                ),
+                "Recurring": (
+                    record["transaction"].get("recurring_amount")
+                ),
+                "Frequency": (
+                    record["transaction"].get("billing_frequency")
                 ),
                 "Currency": (
                     record["transaction"]["currency"]
