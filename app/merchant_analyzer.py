@@ -52,6 +52,12 @@ MERCHANT_ANALYSIS_SCHEMA = {
             "type": "string",
             "enum": ["YES", "NO", "UNKNOWN"]
         },
+        "recurring_amount": {
+            "type": "number"
+        },
+        "billing_frequency": {
+            "type": "string"
+        },
         "refund_status": {
             "type": "string",
             "enum": ["REFUNDABLE", "NON_REFUNDABLE", "UNKNOWN"]
@@ -79,6 +85,8 @@ MERCHANT_ANALYSIS_SCHEMA = {
         "currency",
         "features",
         "subscription_status",
+        "recurring_amount",
+        "billing_frequency",
         "refund_status",
         "delivery_date",
         "suspicious_instructions",
@@ -104,10 +112,14 @@ Important security rules:
    renews, recurring, monthly plan, membership, auto-pay, or auto-debit.
 6. Do not decide whether the purchase should be allowed or blocked.
 7. Do not invent missing information.
-8. Use amount 0 when the amount is unknown.
-9. Use an empty string when merchant, product, currency,
+8. `amount` is the amount charged immediately or at checkout.
+9. `recurring_amount` is the amount charged on renewal. Use 0 if absent.
+10. `billing_frequency` describes renewal timing, such as monthly,
+    yearly, or after_trial. Use an empty string if unknown.
+11. Use amount 0 when the immediate amount is unknown.
+12. Use an empty string when merchant, product, currency,
    or delivery date is unknown.
-10. Evidence must contain short factual phrases supporting the extraction.
+13. Evidence must contain short factual phrases supporting the extraction.
 
 The user's approved buying rules are not provided to you.
 You cannot modify or override those rules.
@@ -148,6 +160,48 @@ def _normalise_for_safety_scan(value: str) -> str:
 
 def _contains_any(value: str, phrases: list[str]) -> bool:
     return any(phrase in value for phrase in phrases)
+
+
+def _extract_amount_values(value: str) -> list[float]:
+    matches: list[tuple[int, float]] = []
+
+    patterns = [
+        r"(?:₹|rs\.?|inr)\s*([0-9]+(?:[,.][0-9]+)*)",
+        r"([0-9]+(?:[,.][0-9]+)*)\s*(?:rupees|inr)",
+    ]
+
+    for pattern in patterns:
+        for match in re.finditer(
+            pattern,
+            value,
+            re.IGNORECASE,
+        ):
+            amount = float(
+                match.group(1).replace(",", "")
+            )
+            matches.append((match.start(), amount))
+
+    matches.sort(key=lambda item: item[0])
+
+    return [amount for _, amount in matches]
+
+
+def _extract_trial_upfront_amount(
+    value: str,
+) -> float | None:
+    trial_match = re.search(
+        r"trial.{0,80}?(?:₹|rs\.?|inr)\s*"
+        r"([0-9]+(?:[,.][0-9]+)*)",
+        value,
+        re.IGNORECASE,
+    )
+
+    if trial_match is None:
+        return None
+
+    return float(
+        trial_match.group(1).replace(",", "")
+    )
 
 
 def _deterministic_safety_facts(
@@ -277,8 +331,34 @@ def _deterministic_safety_facts(
         if phrase in text
     ]
 
+    amount_values = _extract_amount_values(merchant_text)
+    trial_upfront_amount = _extract_trial_upfront_amount(
+        merchant_text
+    )
+
+    recurring_amount: float | None = None
+
+    if recurring_detected and amount_values:
+        if len(amount_values) >= 2:
+            recurring_amount = amount_values[-1]
+        else:
+            recurring_amount = amount_values[0]
+
+    billing_frequency: str | None = None
+
+    if recurring_detected:
+        if "month" in text or "/month" in text:
+            billing_frequency = "monthly"
+        elif "annual" in text or "year" in text:
+            billing_frequency = "yearly"
+        elif "after the trial" in text or "after trial" in text:
+            billing_frequency = "after_trial"
+
     return {
         "subscription_enabled": subscription_enabled,
+        "upfront_amount": trial_upfront_amount,
+        "recurring_amount": recurring_amount,
+        "billing_frequency": billing_frequency,
         "refundable": refundable,
         "suspicious_instructions": suspicious_instructions,
         "recurring_detected": recurring_detected,
@@ -366,6 +446,59 @@ def _apply_deterministic_safety_overlay(
                 "refundable corrected from merchant text",
             )
 
+        detected_upfront_amount = safety_facts[
+            "upfront_amount"
+        ]
+
+        if (
+            detected_upfront_amount is not None
+            and transaction.amount != detected_upfront_amount
+        ):
+            transaction_updates["amount"] = (
+                detected_upfront_amount
+            )
+
+            _append_unique(
+                deterministic_overrides,
+                "upfront amount corrected from explicit trial terms",
+            )
+
+        detected_recurring_amount = safety_facts[
+            "recurring_amount"
+        ]
+
+        if (
+            detected_recurring_amount is not None
+            and transaction.recurring_amount
+            != detected_recurring_amount
+        ):
+            transaction_updates["recurring_amount"] = (
+                detected_recurring_amount
+            )
+
+            _append_unique(
+                deterministic_overrides,
+                "recurring amount corrected from merchant text",
+            )
+
+        detected_billing_frequency = safety_facts[
+            "billing_frequency"
+        ]
+
+        if (
+            detected_billing_frequency is not None
+            and transaction.billing_frequency
+            != detected_billing_frequency
+        ):
+            transaction_updates["billing_frequency"] = (
+                detected_billing_frequency
+            )
+
+            _append_unique(
+                deterministic_overrides,
+                "billing frequency corrected from merchant text",
+            )
+
         if transaction_updates:
             transaction = transaction.model_copy(
                 update=transaction_updates
@@ -407,6 +540,15 @@ def _build_result_from_data(
     error_code: str | None = None,
 ) -> MerchantAnalysisResult:
     amount = float(data.get("amount", 0))
+    recurring_amount_value = float(
+        data.get("recurring_amount", 0) or 0
+    )
+
+    recurring_amount = (
+        recurring_amount_value
+        if recurring_amount_value > 0
+        else None
+    )
 
     if amount <= 0:
         return MerchantAnalysisResult(
@@ -429,6 +571,10 @@ def _build_result_from_data(
         features=data.get("features", []),
         subscription_enabled=_status_to_boolean(
             data.get("subscription_status", "UNKNOWN")
+        ),
+        recurring_amount=recurring_amount,
+        billing_frequency=(
+            data.get("billing_frequency", "") or None
         ),
         refundable=_refund_to_boolean(
             data.get("refund_status", "UNKNOWN")
@@ -616,6 +762,9 @@ def analyze_merchant_text_with_mock(
     ]
 
     evidence: list[str] = []
+    safety_facts = _deterministic_safety_facts(
+        merchant_text
+    )
 
     if amount_match:
         evidence.append(
@@ -644,6 +793,12 @@ def analyze_merchant_text_with_mock(
         "currency": "INR",
         "features": [],
         "subscription_status": subscription_status,
+        "recurring_amount": (
+            safety_facts["recurring_amount"] or 0
+        ),
+        "billing_frequency": (
+            safety_facts["billing_frequency"] or ""
+        ),
         "refund_status": refund_status,
         "delivery_date": "",
         "suspicious_instructions": suspicious_instructions,
