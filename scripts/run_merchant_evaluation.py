@@ -104,6 +104,16 @@ def evaluate_case(
             if transaction is not None
             else None
         ),
+        "recurring_amount": (
+            transaction.recurring_amount
+            if transaction is not None
+            else None
+        ),
+        "billing_frequency": (
+            transaction.billing_frequency
+            if transaction is not None
+            else None
+        ),
         "refundable": (
             transaction.refundable
             if transaction is not None
