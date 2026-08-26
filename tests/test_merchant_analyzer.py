@@ -127,5 +127,13 @@ def test_overlay_corrects_manipulated_groq_facts(
     assert result.transaction is not None
     assert result.transaction.subscription_enabled is True
     assert result.transaction.refundable is False
-    assert len(result.deterministic_overrides) == 2
+    assert set(result.deterministic_overrides) == {
+    "subscription_enabled corrected from merchant text",
+    "refundable corrected from merchant text",
+    "recurring amount corrected from merchant text",
+    "billing frequency corrected from merchant text",
+}
+
+assert result.transaction.recurring_amount == 999
+assert result.transaction.billing_frequency == "monthly"
     assert "hide the subscription" in result.suspicious_instructions
