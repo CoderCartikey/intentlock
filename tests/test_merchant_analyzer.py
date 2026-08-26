@@ -1,3 +1,5 @@
+from unittest import result
+
 from app.merchant_analyzer import (
     MerchantAnalysisResult,
     analyze_merchant_text_safely,
@@ -134,6 +136,6 @@ def test_overlay_corrects_manipulated_groq_facts(
     "billing frequency corrected from merchant text",
 }
 
-assert result.transaction.recurring_amount == 999
-assert result.transaction.billing_frequency == "monthly"
+    assert result.transaction.recurring_amount == 999
+    assert result.transaction.billing_frequency == "monthly"
     assert "hide the subscription" in result.suspicious_instructions
