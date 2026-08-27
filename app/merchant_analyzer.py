@@ -847,6 +847,24 @@ def analyze_merchant_text_safely(
             cleaned_text
         )
 
+        if (
+            groq_result.status == ExtractionStatus.FAILED
+            or groq_result.transaction is None
+        ):
+            fallback = analyze_merchant_text_with_mock(
+                cleaned_text
+            )
+            fallback.model = groq_result.model
+            fallback.error_code = (
+                "GROQ_RESULT_"
+                f"{groq_result.error_code or 'UNUSABLE'}"
+            )
+
+            return _apply_deterministic_safety_overlay(
+                fallback,
+                cleaned_text,
+            )
+
         return _apply_deterministic_safety_overlay(
             groq_result,
             cleaned_text,
