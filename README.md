@@ -48,6 +48,7 @@ It also handles trial pricing correctly:
 ```text
 ₹49 charged now → ₹499 recurring every month after the trial
 ```
+YouTube DEMO: https://www.youtube.com/watch?v=6XvzeT0iCr8&t=7s  
 
 ## Architecture
 
