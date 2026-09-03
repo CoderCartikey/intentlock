@@ -222,3 +222,5 @@ IntentLock is a buildathon prototype, not a production payment processor. It use
 
 **Kartikey Bhardwaj**  
 GitHub: [CoderCartikey](https://github.com/CoderCartikey)
+
+© 2026 Kartikey Bhardwaj. IntentLock was independently developed for the Razorpay AI Buildathon. Submitted on 28 August 2026. See commit history and demo video for provenance.
